@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "packageManager": "pnpm@10.18.3",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -27,15 +29,15 @@
     "@tailwindcss/postcss": "latest",
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
-    "@types/node": "latest",
+    "@types/node": "24.10.0",
     "@types/react": "latest",
     "@types/react-dom": "latest",
-    "eslint": "latest",
+    "eslint": "9.39.5",
     "eslint-config-next": "16.4.0",
     "jsdom": "latest",
     "postcss": "latest",
     "tailwindcss": "latest",
-    "typescript": "latest",
+    "typescript": "6.0.2",
     "vitest": "latest"
   }
 }
