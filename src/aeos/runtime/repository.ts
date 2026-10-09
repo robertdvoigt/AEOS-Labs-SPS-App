@@ -6,7 +6,7 @@ import type {
   RuntimePersistence,
   VerificationStatus,
 } from "@/aeos/runtime/contracts";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 
 type ActionRow = Database["public"]["Tables"]["action_contracts"]["Row"];
 
@@ -94,9 +94,9 @@ export class SupabaseRuntimePersistence implements RuntimePersistence {
         provider: patch.provider,
         model: patch.model,
         provider_response_id: patch.providerResponseId,
-        result: patch.result,
-        limitations: patch.limitations,
-        usage: patch.usage,
+        result: patch.result as Json | undefined,
+        limitations: patch.limitations as Json | undefined,
+        usage: patch.usage as Json | undefined,
         error_code: patch.errorCode,
         error_message: patch.errorMessage,
         started_at: patch.startedAt,
@@ -126,7 +126,7 @@ export class SupabaseRuntimePersistence implements RuntimePersistence {
         verifier_kind: input.verifierKind,
         method: input.method,
         summary: input.summary,
-        details: input.details ?? {},
+        details: (input.details ?? {}) as Json,
       })
       .select("id")
       .single();
@@ -155,10 +155,10 @@ export class SupabaseRuntimePersistence implements RuntimePersistence {
         verification_result_id: input.verificationResultId ?? null,
         outcome: input.outcome,
         expected_contribution: input.expectedContribution ?? null,
-        actual_result: input.actualResult,
+        actual_result: input.actualResult as Json,
         profile_revision_before: input.profileRevisionBefore,
         profile_revision_after: input.profileRevisionAfter ?? null,
-        limitations: input.limitations ?? [],
+        limitations: (input.limitations ?? []) as Json,
       })
       .select("id")
       .single();
