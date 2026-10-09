@@ -14,6 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_contracts: {
+        Row: {
+          acceptance_condition: Json
+          action_type: string
+          authority_requirements: Json
+          created_at: string
+          created_by: string | null
+          expected_result: Json
+          id: string
+          input: Json
+          objective: string
+          owner: string
+          parent_action_id: string | null
+          profile_revision: number
+          project_id: string
+          required_capabilities: Json
+          status: string
+          title: string
+          updated_at: string
+          verification_requirements: Json
+        }
+        Insert: {
+          acceptance_condition?: Json
+          action_type?: string
+          authority_requirements?: Json
+          created_at?: string
+          created_by?: string | null
+          expected_result?: Json
+          id?: string
+          input?: Json
+          objective: string
+          owner: string
+          parent_action_id?: string | null
+          profile_revision: number
+          project_id: string
+          required_capabilities?: Json
+          status?: string
+          title: string
+          updated_at?: string
+          verification_requirements?: Json
+        }
+        Update: {
+          acceptance_condition?: Json
+          action_type?: string
+          authority_requirements?: Json
+          created_at?: string
+          created_by?: string | null
+          expected_result?: Json
+          id?: string
+          input?: Json
+          objective?: string
+          owner?: string
+          parent_action_id?: string | null
+          profile_revision?: number
+          project_id?: string
+          required_capabilities?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          verification_requirements?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_contracts_parent_action_id_fkey"
+            columns: ["parent_action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_contracts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_records: {
+        Row: {
+          action_id: string
+          actual_result: Json
+          created_at: string
+          expected_contribution: string | null
+          id: string
+          limitations: Json
+          outcome: string
+          profile_revision_after: number | null
+          profile_revision_before: number
+          project_id: string
+          runtime_execution_id: string
+          verification_result_id: string | null
+        }
+        Insert: {
+          action_id: string
+          actual_result?: Json
+          created_at?: string
+          expected_contribution?: string | null
+          id?: string
+          limitations?: Json
+          outcome: string
+          profile_revision_after?: number | null
+          profile_revision_before: number
+          project_id: string
+          runtime_execution_id: string
+          verification_result_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          actual_result?: Json
+          created_at?: string
+          expected_contribution?: string | null
+          id?: string
+          limitations?: Json
+          outcome?: string
+          profile_revision_after?: number | null
+          profile_revision_before?: number
+          project_id?: string
+          runtime_execution_id?: string
+          verification_result_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_records_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_records_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_records_runtime_execution_id_fkey"
+            columns: ["runtime_execution_id"]
+            isOneToOne: false
+            referencedRelation: "runtime_executions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_records_verification_result_id_fkey"
+            columns: ["verification_result_id"]
+            isOneToOne: false
+            referencedRelation: "verification_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -68,6 +220,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "project_profile_revisions_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "project_profile_revisions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -108,6 +267,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_profiles_current_nba_action_id_fkey"
+            columns: ["current_nba_action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_profiles_project_id_fkey"
             columns: ["project_id"]
@@ -155,6 +321,213 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      runtime_executions: {
+        Row: {
+          action_id: string
+          attempt: number
+          cancel_requested_at: string | null
+          completed_at: string | null
+          context_revision: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          limitations: Json
+          model: string | null
+          model_class: string | null
+          project_id: string
+          provider: string | null
+          provider_response_id: string | null
+          result: Json
+          started_at: string | null
+          state: string
+          usage: Json
+          workflow_run_id: string | null
+        }
+        Insert: {
+          action_id: string
+          attempt?: number
+          cancel_requested_at?: string | null
+          completed_at?: string | null
+          context_revision: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          limitations?: Json
+          model?: string | null
+          model_class?: string | null
+          project_id: string
+          provider?: string | null
+          provider_response_id?: string | null
+          result?: Json
+          started_at?: string | null
+          state?: string
+          usage?: Json
+          workflow_run_id?: string | null
+        }
+        Update: {
+          action_id?: string
+          attempt?: number
+          cancel_requested_at?: string | null
+          completed_at?: string | null
+          context_revision?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          limitations?: Json
+          model?: string | null
+          model_class?: string | null
+          project_id?: string
+          provider?: string | null
+          provider_response_id?: string | null
+          result?: Json
+          started_at?: string | null
+          state?: string
+          usage?: Json
+          workflow_run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runtime_executions_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runtime_executions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      runtime_steps: {
+        Row: {
+          attempt: number
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          external_effect_state: string
+          id: string
+          input: Json
+          kind: string
+          output: Json
+          runtime_execution_id: string
+          sequence: number
+          started_at: string | null
+          state: string
+          step_key: string
+        }
+        Insert: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          external_effect_state?: string
+          id?: string
+          input?: Json
+          kind: string
+          output?: Json
+          runtime_execution_id: string
+          sequence?: number
+          started_at?: string | null
+          state?: string
+          step_key: string
+        }
+        Update: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          external_effect_state?: string
+          id?: string
+          input?: Json
+          kind?: string
+          output?: Json
+          runtime_execution_id?: string
+          sequence?: number
+          started_at?: string | null
+          state?: string
+          step_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runtime_steps_runtime_execution_id_fkey"
+            columns: ["runtime_execution_id"]
+            isOneToOne: false
+            referencedRelation: "runtime_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_results: {
+        Row: {
+          action_id: string
+          created_at: string
+          details: Json
+          id: string
+          method: string
+          project_id: string
+          runtime_execution_id: string
+          status: string
+          summary: string
+          verifier_kind: string
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          details?: Json
+          id?: string
+          method: string
+          project_id: string
+          runtime_execution_id: string
+          status: string
+          summary: string
+          verifier_kind: string
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          details?: Json
+          id?: string
+          method?: string
+          project_id?: string
+          runtime_execution_id?: string
+          status?: string
+          summary?: string
+          verifier_kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_results_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_results_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verification_results_runtime_execution_id_fkey"
+            columns: ["runtime_execution_id"]
+            isOneToOne: false
+            referencedRelation: "runtime_executions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
