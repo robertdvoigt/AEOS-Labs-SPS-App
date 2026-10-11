@@ -1,0 +1,27 @@
+name: Generate pnpm Lockfile
+
+on:
+  push:
+    branches: [increment-0-closeout]
+    paths:
+      - "package.json"
+      - ".github/workflows/generate-lockfile.yml"
+      - "pnpm-lock.yaml"
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --lockfile-only --ignore-scripts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lockfile
+          path: pnpm-lock.yaml
+          if-no-files-found: error
