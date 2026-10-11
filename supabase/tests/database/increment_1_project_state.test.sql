@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(11);
 
 insert into auth.users (id, email) values
   ('33333333-3333-3333-3333-333333333333', 'increment1-owner@example.test'),
@@ -106,6 +106,16 @@ select throws_ok(
   '42501',
   'project access denied',
   'other user cannot reconcile owner project'
+);
+
+set local role anon;
+set local request.jwt.claim.sub = '';
+
+select throws_ok(
+  $ select public.create_project_with_profile('Anonymous project', '{}'::jsonb, '{}'::jsonb) $,
+  '42501',
+  null,
+  'anonymous role cannot execute project creation RPC'
 );
 
 select * from finish();
