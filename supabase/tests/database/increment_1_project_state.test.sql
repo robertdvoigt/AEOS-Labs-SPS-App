@@ -112,7 +112,7 @@ set local role anon;
 set local request.jwt.claim.sub = '';
 
 select throws_ok(
-  $ select public.create_project_with_profile('Anonymous project', '{}'::jsonb, '{}'::jsonb) $,
+  $sql$ select public.create_project_with_profile('Anonymous project', '{}'::jsonb, '{}'::jsonb) $sql$,
   '42501',
   null,
   'anonymous role cannot execute project creation RPC'
