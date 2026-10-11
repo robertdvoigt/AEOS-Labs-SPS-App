@@ -2,7 +2,6 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getPublicEnv } from "@/lib/env";
 
 export async function requestMagicLink(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -12,13 +11,9 @@ export async function requestMagicLink(formData: FormData) {
   }
 
   const supabase = await createClient();
-  const env = getPublicEnv();
 
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/projects`,
-    },
   });
 
   if (error) {
