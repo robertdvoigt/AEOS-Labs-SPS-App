@@ -2,28 +2,24 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getPublicEnv } from "@/lib/env";
 
-export async function requestMagicLink(formData: FormData) {
+export async function signInWithPassword(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const password = String(formData.get("password") ?? "");
 
-  if (!email || !email.includes("@")) {
-    redirect("/login?error=invalid-email");
+  if (!email || !email.includes("@") || !password) {
+    redirect("/login?error=invalid");
   }
 
   const supabase = await createClient();
-  const env = getPublicEnv();
-
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email,
-    options: {
-      emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/projects`,
-    },
+    password,
   });
 
   if (error) {
-    redirect("/login?error=send-failed");
+    redirect("/login?error=credentials");
   }
 
-  redirect(`/login?sent=1&email=${encodeURIComponent(email)}`);
+  redirect("/projects");
 }
