@@ -534,7 +534,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_project_with_profile: {
+        Args: {
+          p_core_state?: Json
+          p_name: string
+          p_specialization_state?: Json
+        }
+        Returns: string
+      }
+      reconcile_project_state: {
+        Args: {
+          p_action_id?: string
+          p_change_summary?: string
+          p_core_state: Json
+          p_current_nba_action_id?: string
+          p_expected_revision: number
+          p_project_id: string
+          p_specialization_state: Json
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
