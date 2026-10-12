@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(19);
 
 insert into auth.users (id, email) values
   ('99999999-9999-4999-8999-999999999999', 'increment4-owner@example.test'),
@@ -80,13 +80,19 @@ select lives_ok(
   'workflow capability can write a scoped checkpoint without user session'
 );
 
+set local role authenticated;
+set local request.jwt.claim.sub = '99999999-9999-4999-8999-999999999999';
+
 select results_eq(
-  $$ select count(*) from public.runtime_checkpoints where runtime_execution_id = (
+  $ select count(*) from public.runtime_checkpoints where runtime_execution_id = (
     select (value->>'runtimeExecutionId')::uuid from probe_context
-  ) $$,
+  ) $,
   array[2::bigint],
   'workflow checkpoint is durable'
 );
+
+set local role anon;
+set local request.jwt.claim.sub = '';
 
 select throws_ok(
   $$ select public.workflow_runtime_checkpoint(
