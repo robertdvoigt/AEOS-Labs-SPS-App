@@ -25,6 +25,10 @@ type CodeExecutionInput = {
   task: Record<string, unknown>;
 };
 
+function shellQuote(value: string) {
+  return "'" + value.replace(/'/g, "'\\''") + "'";
+}
+
 type ExecCommandCapable = {
   execCommand?: (args: {
     cmd: string;
