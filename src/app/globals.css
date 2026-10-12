@@ -208,3 +208,23 @@ textarea { resize: vertical; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) {
   .runtime-spinner { animation: none; border-right-color: currentColor; }
 }
+
+
+/* Increment 4 — Durable Workflow */
+.durability-panel { margin-top: 18px; display: grid; gap: 16px; }
+.durability-panel form { margin: 0; }
+.checkpoint-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+.checkpoint-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--aeos-border);
+  padding-top: 10px;
+}
+.checkpoint-list span { color: var(--aeos-muted); font-size: .86rem; }
