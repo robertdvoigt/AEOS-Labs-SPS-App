@@ -28,14 +28,21 @@ function requireConfig() {
   const appId = process.env.GITHUB_APP_ID?.trim();
   const privateKey = process.env.GITHUB_APP_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
   const slug = process.env.GITHUB_APP_SLUG?.trim();
+  const clientId = process.env.GITHUB_APP_CLIENT_ID?.trim();
+  const clientSecret = process.env.GITHUB_APP_CLIENT_SECRET?.trim();
 
-  if (!appId || !privateKey || !slug) {
+  if (!appId || !privateKey || !slug || !clientId || !clientSecret) {
     throw new GitHubAppConfigurationError(
       "GitHub App configuration is incomplete.",
     );
   }
 
-  return { appId, privateKey, slug };
+  return { appId, privateKey, slug, clientId, clientSecret };
+}
+
+export function getGitHubAppOAuthConfig() {
+  const { clientId, clientSecret } = requireConfig();
+  return { clientId, clientSecret };
 }
 
 export function getGitHubAppSlug() {
@@ -151,4 +158,90 @@ export async function createRepositoryForInstallation(input: {
     defaultBranch: data.default_branch || "main",
     htmlUrl: data.html_url,
   };
+}
+
+
+export async function exchangeGitHubAppUserCode(input: {
+  code: string;
+  redirectUri: string;
+}) {
+  const { clientId, clientSecret } = getGitHubAppOAuthConfig();
+  const response = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code: input.code,
+      redirect_uri: input.redirectUri,
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("GitHub user authorization exchange failed.");
+  }
+
+  const payload = (await response.json()) as {
+    access_token?: string;
+    error?: string;
+    error_description?: string;
+  };
+
+  if (!payload.access_token) {
+    throw new Error(
+      payload.error_description ||
+        payload.error ||
+        "GitHub did not return a user access token.",
+    );
+  }
+
+  return payload.access_token;
+}
+
+export async function assertGitHubUserCanAccessInstallation(
+  userAccessToken: string,
+  installationId: string,
+) {
+  const targetId = Number(installationId);
+  if (!Number.isSafeInteger(targetId) || targetId <= 0) {
+    throw new Error("Invalid GitHub installation id.");
+  }
+
+  for (let page = 1; page <= 10; page += 1) {
+    const response = await fetch(
+      "https://api.github.com/user/installations?per_page=100&page=" + page,
+      {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: "Bearer " + userAccessToken,
+          "X-GitHub-Api-Version": "2026-03-10",
+        },
+        cache: "no-store",
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error("Could not verify GitHub installation access.");
+    }
+
+    const payload = (await response.json()) as {
+      total_count?: number;
+      installations?: Array<{ id: number }>;
+    };
+    const installations = payload.installations ?? [];
+
+    if (installations.some((installation) => installation.id === targetId)) {
+      return;
+    }
+
+    if (installations.length < 100) break;
+  }
+
+  throw new Error(
+    "The authorized GitHub user cannot access this App installation.",
+  );
 }
