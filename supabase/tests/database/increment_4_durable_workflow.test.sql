@@ -130,10 +130,10 @@ select results_eq(
 );
 
 select lives_ok(
-  $ select public.workflow_cancel_durability_probe(
+  $q1$ select public.workflow_cancel_durability_probe(
     (select (value->>'runtimeExecutionId')::uuid from probe_context),
     (select value->>'capabilityToken' from probe_context)
-  ) $,
+  ) $q1$,
   'workflow cancels at a safe boundary'
 );
 
@@ -191,11 +191,11 @@ select public.workflow_runtime_checkpoint(
 );
 
 select lives_ok(
-  $ select public.workflow_complete_durability_probe(
+  $q2$ select public.workflow_complete_durability_probe(
     (select (value->>'runtimeExecutionId')::uuid from probe_context_2),
     (select value->>'capabilityToken' from probe_context_2),
     '{"completed":true,"survivedRequestBoundary":true}'::jsonb
-  ) $,
+  ) $q2$,
   'workflow can complete using only its scoped capability'
 );
 
