@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import type { Json } from "@/lib/supabase/database.types";
 import { readProjectState } from "@/server/project-state";
 import { confirmMvpAction, executeCurrentActionAction } from "./actions";
+import { RuntimeSubmitButton } from "@/components/runtime/runtime-submit-button";
+import { RuntimeStatusPoller } from "@/components/runtime/runtime-status-poller";
+import { isRuntimeStateActive } from "@/aeos/runtime/status";
 
 function ownerLabel(owner: string) {
   if (owner === "aeos") return "AEOS will do this";
@@ -76,9 +79,21 @@ export default async function ProjectWorkspacePage({
   const product = state.canonical.specializationState.productModel;
   const genesisEstablished = core.genesis.status === "established" && product.status !== "not_started";
   const runtimeError = runtimeErrorMessage(query.runtime_error);
+  const runtimeActionInProgress =
+    Boolean(state.currentAction) &&
+    state.currentAction?.owner === "aeos" &&
+    state.currentAction?.action_type === "analysis" &&
+    (
+      state.currentAction?.status === "active" ||
+      (
+        state.latestRuntime?.action_id === state.currentAction?.id &&
+        isRuntimeStateActive(state.latestRuntime?.state)
+      )
+    );
 
   return (
     <main className="app-shell">
+      <RuntimeStatusPoller active={runtimeActionInProgress} />
       <header className="workspace-header">
         <div>
           <Link href="/projects" className="back-link">← Projects</Link>
@@ -211,7 +226,19 @@ export default async function ProjectWorkspacePage({
                       <button type="submit" className="primary-button">Confirm MVP direction</button>
                     </form>
                   </div>
-                ) : state.currentAction.owner === "aeos" && state.currentAction.action_type === "analysis" ? (
+                ) : runtimeActionInProgress ? (
+                  <div className="runtime-running-card" role="status" aria-live="polite">
+                    <span className="runtime-spinner" aria-hidden="true" />
+                    <div>
+                      <strong>AEOS is working on this action.</strong>
+                      <p>
+                        Execution has started and this page will refresh automatically as status changes.
+                      </p>
+                    </div>
+                  </div>
+                ) : state.currentAction.owner === "aeos" &&
+                    state.currentAction.action_type === "analysis" &&
+                    state.currentAction.status === "ready" ? (
                   <div className="runtime-action">
                     <p>
                       The Minimum Runtime can execute this bounded analysis action using canonical project context, structured output, and deterministic verification.
@@ -220,7 +247,7 @@ export default async function ProjectWorkspacePage({
                       <input type="hidden" name="projectId" value={projectId} />
                       <input type="hidden" name="actionId" value={state.currentAction.id} />
                       <input type="hidden" name="expectedRevision" value={state.profile.revision} />
-                      <button type="submit" className="primary-button">Run with AEOS</button>
+                      <RuntimeSubmitButton />
                     </form>
                   </div>
                 ) : state.currentAction.owner === "aeos" ? (
