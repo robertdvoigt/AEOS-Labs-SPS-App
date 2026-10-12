@@ -24,7 +24,11 @@
     "react-dom": "19.2.0",
     "zod": "latest",
     "openai": "latest",
-    "workflow": "latest"
+    "workflow": "latest",
+    "@openai/agents": "latest",
+    "@openai/agents-extensions": "latest",
+    "@vercel/sandbox": "latest",
+    "@octokit/app": "latest"
   },
   "devDependencies": {
     "@playwright/test": "latest",
