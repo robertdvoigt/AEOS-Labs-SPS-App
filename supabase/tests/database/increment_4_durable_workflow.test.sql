@@ -130,12 +130,15 @@ select results_eq(
 );
 
 select lives_ok(
-  $$ select public.workflow_cancel_durability_probe(
+  $ select public.workflow_cancel_durability_probe(
     (select (value->>'runtimeExecutionId')::uuid from probe_context),
     (select value->>'capabilityToken' from probe_context)
-  ) $$,
+  ) $,
   'workflow cancels at a safe boundary'
 );
+
+set local role authenticated;
+set local request.jwt.claim.sub = '99999999-9999-4999-8999-999999999999';
 
 select results_eq(
   $$ select state from public.runtime_executions where id = (
@@ -188,13 +191,16 @@ select public.workflow_runtime_checkpoint(
 );
 
 select lives_ok(
-  $$ select public.workflow_complete_durability_probe(
+  $ select public.workflow_complete_durability_probe(
     (select (value->>'runtimeExecutionId')::uuid from probe_context_2),
     (select value->>'capabilityToken' from probe_context_2),
     '{"completed":true,"survivedRequestBoundary":true}'::jsonb
-  ) $$,
+  ) $,
   'workflow can complete using only its scoped capability'
 );
+
+set local role authenticated;
+set local request.jwt.claim.sub = '99999999-9999-4999-8999-999999999999';
 
 select results_eq(
   $$ select state from public.runtime_executions where id = (
