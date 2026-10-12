@@ -1,5 +1,6 @@
 import { sleep } from "workflow";
 import { createWorkflowSupabaseClient } from "@/integrations/supabase/workflow-client";
+import type { Json } from "@/lib/supabase/database.types";
 
 export type DurabilityProbeWorkflowInput = {
   runtimeExecutionId: string;
@@ -27,7 +28,7 @@ async function checkpointStep(
   input: DurabilityProbeWorkflowInput,
   sequence: number,
   phase: string,
-  state: Record<string, unknown>,
+  state: Record<string, Json | undefined>,
 ): Promise<WorkflowControl> {
   "use step";
 
