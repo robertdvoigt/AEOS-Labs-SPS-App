@@ -159,9 +159,9 @@ select throws_ok(
     'openai',
     'gpt-test'
   ) $$,
-  '42501',
-  'project access denied',
-  'other user cannot start owner Runtime action'
+  '55000',
+  'action is not current and executable',
+  'other user cannot discover or start owner Runtime action'
 );
 
 set local request.jwt.claim.sub = '77777777-7777-4777-8777-777777777777';
