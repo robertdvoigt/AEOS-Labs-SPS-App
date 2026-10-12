@@ -161,3 +161,18 @@ textarea { resize: vertical; line-height: 1.5; }
 @media (max-width: 720px) {
   .product-model-grid,.compact-list { grid-template-columns: 1fr; }
 }
+
+
+/* Increment 3 — Minimum Runtime */
+.runtime-action { margin-top: 20px; border-top: 1px solid var(--aeos-border); padding-top: 18px; display: grid; gap: 12px; }
+.runtime-action p { margin: 0; color: var(--aeos-muted); line-height: 1.55; }
+.runtime-action form { margin: 0; }
+.runtime-panel { margin-top: 18px; }
+.runtime-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; margin-top: 18px; }
+.runtime-grid>div { border-top: 1px solid var(--aeos-border); padding-top: 12px; }
+.runtime-grid dt { font-size: .8rem; color: var(--aeos-muted); }
+.runtime-grid dd { margin: 4px 0 0; font-weight: 700; }
+.runtime-summary { margin: 18px 0 0; color: var(--aeos-muted); line-height: 1.6; }
+@media (max-width: 720px) {
+  .runtime-grid { grid-template-columns: 1fr; }
+}
