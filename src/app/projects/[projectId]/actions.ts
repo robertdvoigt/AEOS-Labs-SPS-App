@@ -10,6 +10,13 @@ import {
   startDurabilityProbe,
 } from "@/server/durable-runtime";
 import { StaleProjectStateError } from "@/server/project-state";
+import {
+  SourceWorkspaceError,
+  cancelCodeExecution,
+  connectExistingRepository,
+  createProjectRepository,
+  startCodeExecution,
+} from "@/server/source-workspace";
 
 export async function confirmMvpAction(formData: FormData) {
   const projectId = String(formData.get("projectId") ?? "");
@@ -115,4 +122,79 @@ export async function cancelDurabilityProbeAction(formData: FormData) {
 
   revalidatePath("/projects/" + projectId);
   redirect("/projects/" + projectId + "?durability=cancel_requested");
+}
+
+
+export async function connectExistingRepositoryAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+  const fullName = String(formData.get("fullName") ?? "");
+
+  try {
+    await connectExistingRepository({ projectId, fullName });
+  } catch (error) {
+    if (error instanceof SourceWorkspaceError) {
+      redirect("/projects/" + projectId + "?source_error=" + encodeURIComponent(error.code));
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?source_error=repo_connect_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?source=repository_connected");
+}
+
+export async function createProjectRepositoryAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+
+  try {
+    await createProjectRepository(projectId);
+  } catch (error) {
+    if (error instanceof SourceWorkspaceError) {
+      redirect("/projects/" + projectId + "?source_error=" + encodeURIComponent(error.code));
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?source_error=repo_create_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?source=repository_created");
+}
+
+export async function startCodeExecutionAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+  const expectedRevision = Number(formData.get("expectedRevision"));
+
+  try {
+    await startCodeExecution({ projectId, expectedRevision });
+  } catch (error) {
+    if (error instanceof StaleProjectStateError) {
+      redirect("/projects/" + projectId + "?error=stale");
+    }
+    if (error instanceof SourceWorkspaceError) {
+      redirect("/projects/" + projectId + "?build_error=" + encodeURIComponent(error.code));
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?build_error=code_execution_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?build=started");
+}
+
+export async function cancelCodeExecutionAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+  const runtimeExecutionId = String(formData.get("runtimeExecutionId") ?? "");
+
+  try {
+    await cancelCodeExecution(runtimeExecutionId);
+  } catch (error) {
+    if (error instanceof SourceWorkspaceError) {
+      redirect("/projects/" + projectId + "?build_error=" + encodeURIComponent(error.code));
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?build_error=cancel_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?build=cancel_requested");
 }
