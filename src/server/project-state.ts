@@ -1,4 +1,6 @@
 import type { Json } from "@/lib/supabase/database.types";
+import { parseCoreState } from "@/aeos/core/project-state";
+import { parseSoftwareProductState } from "@/aeos/specializations/software-product/product-model";
 import { requireUser } from "@/server/auth";
 
 export class StaleProjectStateError extends Error {
@@ -43,13 +45,30 @@ export async function createProject(name: string) {
   const { data, error } = await supabase.rpc("create_project_with_profile", {
     p_name: trimmed,
     p_core_state: {
+      status: "active",
       mission: null,
       successStandard: null,
-      status: "active",
+      targetCondition: null,
+      constraints: [],
+      authorityBoundaries: [],
+      genesis: { status: "not_started" },
     },
     p_specialization_state: {
       productModel: {
-        status: "provisional",
+        status: "not_started",
+        intendedUser: null,
+        problemOpportunity: null,
+        promisedMinimumValue: null,
+        productHypothesis: null,
+        criticalWorkflow: null,
+        mvpScope: [],
+        mvpExclusions: [],
+        requirements: [],
+        experienceState: {},
+        technicalModel: {},
+        buildQualityState: {},
+        releaseOperationState: {},
+        adaptationState: {},
       },
     },
   });
@@ -77,9 +96,41 @@ export async function readProjectState(projectId: string) {
   if (projectResult.error) throw projectResult.error;
   if (profileResult.error) throw profileResult.error;
 
+  let currentAction = null;
+  let humanDependency = null;
+
+  if (profileResult.data.current_nba_action_id) {
+    const actionResult = await supabase
+      .from("action_contracts")
+      .select("id,project_id,profile_revision,title,objective,owner,status,expected_result,acceptance_condition")
+      .eq("id", profileResult.data.current_nba_action_id)
+      .maybeSingle();
+
+    if (actionResult.error) throw actionResult.error;
+    currentAction = actionResult.data;
+
+    if (currentAction) {
+      const dependencyResult = await supabase
+        .from("human_dependencies")
+        .select("id,action_id,project_id,kind,prompt,why_human,options,status,resolved_value")
+        .eq("action_id", currentAction.id)
+        .eq("status", "open")
+        .maybeSingle();
+
+      if (dependencyResult.error) throw dependencyResult.error;
+      humanDependency = dependencyResult.data;
+    }
+  }
+
   return {
     project: projectResult.data,
     profile: profileResult.data,
+    currentAction,
+    humanDependency,
+    canonical: {
+      coreState: parseCoreState(profileResult.data.core_state),
+      specializationState: parseSoftwareProductState(profileResult.data.specialization_state),
+    },
   };
 }
 
