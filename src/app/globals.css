@@ -176,3 +176,35 @@ textarea { resize: vertical; line-height: 1.5; }
 @media (max-width: 720px) {
   .runtime-grid { grid-template-columns: 1fr; }
 }
+
+
+/* Runtime feedback UX */
+.runtime-submit { display: grid; gap: 10px; justify-items: start; }
+.runtime-submit-button { display: inline-flex; align-items: center; gap: 9px; }
+.runtime-submit-button:disabled { cursor: wait; opacity: .78; }
+.runtime-pending-copy { margin: 0; color: var(--aeos-muted); line-height: 1.5; font-size: .92rem; }
+.runtime-running-card {
+  margin-top: 20px;
+  border-top: 1px solid var(--aeos-border);
+  padding-top: 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.runtime-running-card strong { display: block; }
+.runtime-running-card p { margin: 5px 0 0; color: var(--aeos-muted); line-height: 1.5; }
+.runtime-spinner {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: runtime-spin .8s linear infinite;
+}
+@keyframes runtime-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .runtime-spinner { animation: none; border-right-color: currentColor; }
+}
