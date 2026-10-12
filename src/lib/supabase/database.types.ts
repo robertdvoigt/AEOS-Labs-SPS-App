@@ -92,6 +92,70 @@ export type Database = {
           },
         ]
       }
+      code_changes: {
+        Row: {
+          accepted_at: string | null
+          action_id: string
+          base_commit: string | null
+          branch: string
+          created_at: string
+          head_commit: string | null
+          id: string
+          project_id: string
+          pull_request_ref: string | null
+          repository_id: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          action_id: string
+          base_commit?: string | null
+          branch: string
+          created_at?: string
+          head_commit?: string | null
+          id?: string
+          project_id: string
+          pull_request_ref?: string | null
+          repository_id: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          action_id?: string
+          base_commit?: string | null
+          branch?: string
+          created_at?: string
+          head_commit?: string | null
+          id?: string
+          project_id?: string
+          pull_request_ref?: string | null
+          repository_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "code_changes_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_changes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "code_changes_repository_id_fkey"
+            columns: ["repository_id"]
+            isOneToOne: false
+            referencedRelation: "repositories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       execution_records: {
         Row: {
           action_id: string
@@ -216,6 +280,56 @@ export type Database = {
           },
           {
             foreignKeyName: "human_dependencies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integration_connections: {
+        Row: {
+          created_at: string
+          external_account_id: string
+          id: string
+          installation_id: string | null
+          metadata: Json
+          project_id: string | null
+          provider: string
+          scopes: Json
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_account_id: string
+          id?: string
+          installation_id?: string | null
+          metadata?: Json
+          project_id?: string | null
+          provider: string
+          scopes?: Json
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_account_id?: string
+          id?: string
+          installation_id?: string | null
+          metadata?: Json
+          project_id?: string | null
+          provider?: string
+          scopes?: Json
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_connections_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -378,6 +492,60 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      repositories: {
+        Row: {
+          created_at: string
+          default_branch: string
+          external_id: string
+          id: string
+          installation_connection_id: string
+          owner: string
+          project_id: string
+          provider: string
+          repo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_branch?: string
+          external_id: string
+          id?: string
+          installation_connection_id: string
+          owner: string
+          project_id: string
+          provider?: string
+          repo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_branch?: string
+          external_id?: string
+          id?: string
+          installation_connection_id?: string
+          owner?: string
+          project_id?: string
+          provider?: string
+          repo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "repositories_installation_connection_id_fkey"
+            columns: ["installation_connection_id"]
+            isOneToOne: false
+            referencedRelation: "integration_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "repositories_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       runtime_checkpoints: {
         Row: {
@@ -670,6 +838,15 @@ export type Database = {
         }
         Returns: Json
       }
+      create_code_execution: {
+        Args: {
+          p_branch: string
+          p_expected_revision: number
+          p_project_id: string
+          p_repository_id: string
+        }
+        Returns: Json
+      }
       create_durability_probe: {
         Args: { p_expected_revision: number; p_project_id: string }
         Returns: Json
@@ -722,6 +899,17 @@ export type Database = {
         }
         Returns: number
       }
+      register_project_repository: {
+        Args: {
+          p_connection_id: string
+          p_default_branch: string
+          p_external_id: string
+          p_owner: string
+          p_project_id: string
+          p_repo: string
+        }
+        Returns: string
+      }
       request_cancel_runtime_execution: {
         Args: { p_runtime_execution_id: string }
         Returns: undefined
@@ -736,14 +924,54 @@ export type Database = {
         }
         Returns: string
       }
+      upsert_github_installation: {
+        Args: {
+          p_external_account_id: string
+          p_installation_id: string
+          p_metadata?: Json
+          p_project_id: string
+          p_scopes: Json
+        }
+        Returns: string
+      }
+      workflow_cancel_code_execution: {
+        Args: {
+          p_capability_token: string
+          p_code_change_id: string
+          p_runtime_execution_id: string
+        }
+        Returns: undefined
+      }
       workflow_cancel_durability_probe: {
         Args: { p_capability_token: string; p_runtime_execution_id: string }
+        Returns: undefined
+      }
+      workflow_complete_code_execution: {
+        Args: {
+          p_base_commit: string
+          p_branch: string
+          p_capability_token: string
+          p_code_change_id: string
+          p_head_commit: string
+          p_result: Json
+          p_runtime_execution_id: string
+          p_verification_details: Json
+        }
         Returns: undefined
       }
       workflow_complete_durability_probe: {
         Args: {
           p_capability_token: string
           p_result: Json
+          p_runtime_execution_id: string
+        }
+        Returns: undefined
+      }
+      workflow_fail_code_execution: {
+        Args: {
+          p_capability_token: string
+          p_code_change_id: string
+          p_error_message: string
           p_runtime_execution_id: string
         }
         Returns: undefined

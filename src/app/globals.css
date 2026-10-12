@@ -228,3 +228,27 @@ textarea { resize: vertical; line-height: 1.5; }
   padding-top: 10px;
 }
 .checkpoint-list span { color: var(--aeos-muted); font-size: .86rem; }
+
+
+/* Increment 5 — GitHub + Coding Sandbox */
+.source-workspace-panel { margin-top: 18px; display: grid; gap: 16px; }
+.source-workspace-panel form { margin: 0; }
+.source-workspace-panel a:not(.primary-link) { color: var(--aeos-blue); }
+.source-actions { display: grid; gap: 18px; }
+.existing-repo-form {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+.existing-repo-form label { display: grid; gap: 7px; font-weight: 700; }
+.existing-repo-form label span { font-size: .86rem; }
+.code-change-status {
+  border-top: 1px solid var(--aeos-border);
+  padding-top: 14px;
+}
+.code-change-status p { margin: 6px 0 0; color: var(--aeos-muted); }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+@media (max-width: 720px) {
+  .existing-repo-form { grid-template-columns: 1fr; }
+}
