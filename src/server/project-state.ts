@@ -102,7 +102,7 @@ export async function readProjectState(projectId: string) {
   if (profileResult.data.current_nba_action_id) {
     const actionResult = await supabase
       .from("action_contracts")
-      .select("id,project_id,profile_revision,title,objective,owner,status,expected_result,acceptance_condition")
+      .select("id,project_id,profile_revision,action_type,title,objective,owner,status,expected_result,acceptance_condition,required_capabilities")
       .eq("id", profileResult.data.current_nba_action_id)
       .maybeSingle();
 
@@ -122,11 +122,37 @@ export async function readProjectState(projectId: string) {
     }
   }
 
+  const runtimeResult = await supabase
+    .from("runtime_executions")
+    .select("id,action_id,state,context_revision,model_class,provider,model,result,limitations,usage,error_code,error_message,started_at,completed_at,created_at")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (runtimeResult.error) throw runtimeResult.error;
+
+  let latestVerification = null;
+  if (runtimeResult.data) {
+    const verificationResult = await supabase
+      .from("verification_results")
+      .select("id,runtime_execution_id,status,verifier_kind,method,summary,details,created_at")
+      .eq("runtime_execution_id", runtimeResult.data.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (verificationResult.error) throw verificationResult.error;
+    latestVerification = verificationResult.data;
+  }
+
   return {
     project: projectResult.data,
     profile: profileResult.data,
     currentAction,
     humanDependency,
+    latestRuntime: runtimeResult.data,
+    latestVerification,
     canonical: {
       coreState: parseCoreState(profileResult.data.core_state),
       specializationState: parseSoftwareProductState(profileResult.data.specialization_state),

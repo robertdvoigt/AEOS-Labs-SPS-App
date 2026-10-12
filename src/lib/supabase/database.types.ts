@@ -591,6 +591,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_runtime_analysis: {
+        Args: {
+          p_expected_revision: number
+          p_limitations: Json
+          p_next_action_acceptance_condition: Json
+          p_next_action_expected_result: Json
+          p_next_action_objective: string
+          p_next_action_title: string
+          p_next_action_type: string
+          p_next_required_capabilities?: Json
+          p_provider_response_id: string
+          p_result: Json
+          p_runtime_execution_id: string
+          p_specialization_state: Json
+          p_usage: Json
+          p_verification_details: Json
+          p_verification_method: string
+          p_verification_status: string
+          p_verification_summary: string
+        }
+        Returns: Json
+      }
       confirm_mvp_direction: {
         Args: {
           p_expected_revision: number
@@ -627,6 +649,18 @@ export type Database = {
         }
         Returns: Json
       }
+      fail_runtime_execution: {
+        Args: {
+          p_error_code: string
+          p_error_message: string
+          p_limitations?: Json
+          p_result?: Json
+          p_retryable: boolean
+          p_runtime_execution_id: string
+          p_usage?: Json
+        }
+        Returns: undefined
+      }
       reconcile_project_state: {
         Args: {
           p_action_id?: string
@@ -638,6 +672,16 @@ export type Database = {
           p_specialization_state: Json
         }
         Returns: number
+      }
+      start_runtime_execution: {
+        Args: {
+          p_action_id: string
+          p_expected_revision: number
+          p_model: string
+          p_model_class: string
+          p_provider: string
+        }
+        Returns: string
       }
     }
     Enums: {

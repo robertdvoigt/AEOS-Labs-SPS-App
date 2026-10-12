@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Json } from "@/lib/supabase/database.types";
 import { readProjectState } from "@/server/project-state";
-import { confirmMvpAction } from "./actions";
+import { confirmMvpAction, executeCurrentActionAction } from "./actions";
 
 function ownerLabel(owner: string) {
   if (owner === "aeos") return "AEOS will do this";
@@ -15,12 +16,51 @@ function acceptanceLabel(value: unknown) {
   return entries.length ? entries.join(", ") : "See action acceptance criteria.";
 }
 
+function jsonObject(value: Json | null | undefined): Record<string, Json | undefined> {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  return {};
+}
+
+function runtimeSummary(value: Json) {
+  const root = jsonObject(value);
+  const observed = jsonObject(root.observedResult as Json);
+  return typeof observed.summary === "string" ? observed.summary : null;
+}
+
+function usageLabel(value: Json) {
+  const usage = jsonObject(value);
+  const total = typeof usage.totalTokens === "number" ? usage.totalTokens : 0;
+  return total ? total.toLocaleString() + " tokens" : "—";
+}
+
+function runtimeErrorMessage(code?: string) {
+  switch (code) {
+    case "provider_configuration_missing":
+      return "OpenAI execution is not configured yet. Add the server-side OPENAI_API_KEY and retry.";
+    case "verification_failed":
+      return "The model result did not satisfy the deterministic acceptance check. The action remains retryable.";
+    case "capability_not_available":
+      return "This action requires a Runtime capability that is not active in the Minimum Runtime.";
+    case "action_not_current":
+    case "action_not_executable":
+      return "The action changed before execution. Refresh the current project state.";
+    default:
+      return code ? "Runtime execution failed safely. The current project state was preserved." : null;
+  }
+}
+
 export default async function ProjectWorkspacePage({
   params,
   searchParams,
 }: {
   params: Promise<{ projectId: string }>;
-  searchParams: Promise<{ error?: string; genesis?: string; confirmed?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    genesis?: string;
+    confirmed?: string;
+    runtime?: string;
+    runtime_error?: string;
+  }>;
 }) {
   const { projectId } = await params;
   const query = await searchParams;
@@ -35,6 +75,7 @@ export default async function ProjectWorkspacePage({
   const core = state.canonical.coreState;
   const product = state.canonical.specializationState.productModel;
   const genesisEstablished = core.genesis.status === "established" && product.status !== "not_started";
+  const runtimeError = runtimeErrorMessage(query.runtime_error);
 
   return (
     <main className="app-shell">
@@ -56,6 +97,14 @@ export default async function ProjectWorkspacePage({
         <div className="notice success" role="status">
           MVP direction confirmed. The primary Next Best Action was reassessed.
         </div>
+      ) : null}
+      {query.runtime === "success" ? (
+        <div className="notice success" role="status">
+          AEOS executed and verified the action, reconciled the result, and advanced the project state.
+        </div>
+      ) : null}
+      {runtimeError ? (
+        <div className="notice warning" role="alert">{runtimeError}</div>
       ) : null}
       {query.error === "stale" ? (
         <div className="notice warning" role="alert">
@@ -107,33 +156,29 @@ export default async function ProjectWorkspacePage({
           <section className="panel product-model-panel">
             <div className="section-heading">
               <div>
-                <p className="eyebrow">Provisional Product Model</p>
+                <p className="eyebrow">Product Model</p>
                 <h2>Current MVP direction</h2>
               </div>
               <span>{product.status}</span>
             </div>
             <div className="product-model-grid">
-              <div>
-                <h3>Problem / opportunity</h3>
-                <p>{product.problemOpportunity}</p>
-              </div>
-              <div>
-                <h3>Product hypothesis</h3>
-                <p>{product.productHypothesis}</p>
-              </div>
+              <div><h3>Problem / opportunity</h3><p>{product.problemOpportunity}</p></div>
+              <div><h3>Product hypothesis</h3><p>{product.productHypothesis}</p></div>
               <div>
                 <h3>MVP scope</h3>
-                <ul className="scope-list">
-                  {product.mvpScope.map((item) => <li key={item}>{item}</li>)}
-                </ul>
+                <ul className="scope-list">{product.mvpScope.map((item) => <li key={item}>{item}</li>)}</ul>
               </div>
               <div>
-                <h3>Major exclusions</h3>
-                {product.mvpExclusions.length ? (
+                <h3>Build-ready requirements</h3>
+                {product.requirements.length ? (
                   <ul className="scope-list">
-                    {product.mvpExclusions.map((item) => <li key={item}>{item}</li>)}
+                    {product.requirements.map((item, index) => (
+                      <li key={String((item as Record<string, unknown>).id ?? index)}>
+                        {String((item as Record<string, unknown>).title ?? "Requirement")}
+                      </li>
+                    ))}
                   </ul>
-                ) : <p>None recorded.</p>}
+                ) : <p>Not defined yet.</p>}
               </div>
             </div>
           </section>
@@ -166,14 +211,49 @@ export default async function ProjectWorkspacePage({
                       <button type="submit" className="primary-button">Confirm MVP direction</button>
                     </form>
                   </div>
+                ) : state.currentAction.owner === "aeos" && state.currentAction.action_type === "analysis" ? (
+                  <div className="runtime-action">
+                    <p>
+                      The Minimum Runtime can execute this bounded analysis action using canonical project context, structured output, and deterministic verification.
+                    </p>
+                    <form action={executeCurrentActionAction}>
+                      <input type="hidden" name="projectId" value={projectId} />
+                      <input type="hidden" name="actionId" value={state.currentAction.id} />
+                      <input type="hidden" name="expectedRevision" value={state.profile.revision} />
+                      <button type="submit" className="primary-button">Run with AEOS</button>
+                    </form>
+                  </div>
                 ) : state.currentAction.owner === "aeos" ? (
                   <div className="notice success">
-                    This action is ready for AEOS execution. Governed Runtime execution is the next implementation increment.
+                    This action is correctly owned by AEOS, but it requires coding/sandbox capabilities beyond the synchronous Minimum Runtime.
                   </div>
                 ) : null}
               </>
             ) : null}
           </section>
+
+          {state.latestRuntime ? (
+            <section className="panel runtime-panel">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Latest Runtime execution</p>
+                  <h2>{state.latestRuntime.state}</h2>
+                </div>
+                <span>{state.latestRuntime.model_class ?? "runtime"}</span>
+              </div>
+              <div className="runtime-grid">
+                <div><dt>Model</dt><dd>{state.latestRuntime.model ?? "—"}</dd></div>
+                <div><dt>Usage</dt><dd>{usageLabel(state.latestRuntime.usage)}</dd></div>
+                <div><dt>Verification</dt><dd>{state.latestVerification?.status ?? "—"}</dd></div>
+              </div>
+              {runtimeSummary(state.latestRuntime.result) ? (
+                <p className="runtime-summary">{runtimeSummary(state.latestRuntime.result)}</p>
+              ) : null}
+              {state.latestRuntime.error_message ? (
+                <p className="form-error">{state.latestRuntime.error_message}</p>
+              ) : null}
+            </section>
+          ) : null}
         </>
       )}
     </main>
