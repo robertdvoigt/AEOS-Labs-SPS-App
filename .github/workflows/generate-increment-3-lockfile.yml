@@ -1,0 +1,32 @@
+name: Generate Increment 3 Lockfile
+
+on:
+  push:
+    branches: [increment-3-minimum-runtime]
+    paths:
+      - "package.json"
+      - ".github/workflows/generate-increment-3-lockfile.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: pnpm install --lockfile-only --ignore-scripts
+      - name: Commit lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git diff --cached --quiet && exit 0
+          git commit -m "Update pnpm lockfile for OpenAI SDK"
+          git push origin HEAD:increment-3-minimum-runtime
