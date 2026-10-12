@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 insert into auth.users (id, email) values
   ('99999999-9999-4999-8999-999999999999', 'increment4-owner@example.test'),
@@ -241,6 +241,21 @@ select results_eq(
   $$ select count(*) from public.runtime_checkpoints $$,
   array[0::bigint],
   'other user cannot read owner Runtime checkpoints'
+);
+
+select ok(
+  not has_function_privilege('anon', 'public.create_durability_probe(uuid,bigint)', 'EXECUTE'),
+  'anonymous role cannot execute durability probe creation'
+);
+
+select ok(
+  not has_function_privilege('anon', 'public.bind_durable_workflow(uuid,text)', 'EXECUTE'),
+  'anonymous role cannot bind workflow run identity'
+);
+
+select ok(
+  not has_function_privilege('anon', 'public.request_cancel_runtime_execution(uuid)', 'EXECUTE'),
+  'anonymous role cannot request Runtime cancellation'
 );
 
 select * from finish();
