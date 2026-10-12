@@ -9,6 +9,7 @@ import {
 import { VercelSandboxClient } from "@openai/agents-extensions/sandbox/vercel";
 import { createWorkflowSupabaseClient } from "@/integrations/supabase/workflow-client";
 import { getGitHubInstallationToken } from "@/integrations/github/app";
+import type { Json } from "@/lib/supabase/database.types";
 
 type CodeExecutionInput = {
   runtimeExecutionId: string;
@@ -24,45 +25,58 @@ type CodeExecutionInput = {
   task: Record<string, unknown>;
 };
 
-type ExecResult = {
-  output: string;
-  stdout: string;
-  stderr: string;
-  exitCode?: number | null;
+type ExecCommandCapable = {
+  execCommand?: (args: {
+    cmd: string;
+    workdir?: string;
+    maxOutputTokens?: number;
+  }) => Promise<string>;
 };
 
-function shellQuote(value: string) {
-  return "'" + value.replace(/'/g, "'\\''") + "'";
+type ParsedExec = {
+  raw: string;
+  output: string;
+  exitCode?: number;
+};
+
+function parseExecResponse(raw: string): ParsedExec {
+  const match = raw.match(/Process exited with code (\\d+)/);
+  const outputMarker = "\\nOutput:\\n";
+  const outputIndex = raw.indexOf(outputMarker);
+
+  return {
+    raw,
+    output:
+      outputIndex >= 0
+        ? raw.slice(outputIndex + outputMarker.length)
+        : raw,
+    exitCode: match ? Number(match[1]) : undefined,
+  };
 }
 
 async function exec(
-  sandbox: {
-    exec?: (args: {
-      cmd: string;
-      workdir?: string;
-      maxOutputTokens?: number;
-    }) => Promise<ExecResult>;
-  },
+  sandbox: ExecCommandCapable,
   cmd: string,
   workdir?: string,
   allowFailure = false,
-) {
-  if (!sandbox.exec) {
+): Promise<ParsedExec> {
+  if (!sandbox.execCommand) {
     throw new Error("Sandbox does not expose command execution.");
   }
 
-  const result = await sandbox.exec({
+  const raw = await sandbox.execCommand({
     cmd,
     workdir,
     maxOutputTokens: 12000,
   });
+  const result = parseExecResponse(raw);
 
-  if (!allowFailure && result.exitCode !== 0 && result.exitCode !== null && result.exitCode !== undefined) {
+  if (!allowFailure && result.exitCode !== 0) {
     throw new Error(
       "Sandbox command failed: " +
         cmd.slice(0, 120) +
-        "\n" +
-        (result.stderr || result.stdout || result.output).slice(-4000),
+        "\\n" +
+        result.output.slice(-4000),
     );
   }
 
@@ -73,7 +87,7 @@ async function checkpoint(
   input: CodeExecutionInput,
   sequence: number,
   phase: string,
-  state: Record<string, unknown>,
+  state: Record<string, Json | undefined>,
 ) {
   const supabase = createWorkflowSupabaseClient();
   const { data, error } = await supabase.rpc("workflow_runtime_checkpoint", {
@@ -180,7 +194,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
         "git rev-parse origin/" + shellQuote(input.repository.defaultBranch),
         root + "/" + repoDir,
       )
-    ).stdout.trim();
+    ).output.trim();
 
     const remoteBranchProbe = await exec(
       sandbox,
@@ -311,11 +325,11 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
     if (remoteBranchExists) {
       headCommit = (
         await exec(sandbox, "git rev-parse HEAD", root + "/" + repoDir)
-      ).stdout.trim();
+      ).output.trim();
     } else {
       const status = (
         await exec(sandbox, "git status --porcelain", root + "/" + repoDir)
-      ).stdout.trim();
+      ).output.trim();
 
       if (!status) {
         throw new Error("Coding agent produced no repository changes.");
@@ -334,7 +348,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
 
       headCommit = (
         await exec(sandbox, "git rev-parse HEAD", root + "/" + repoDir)
-      ).stdout.trim();
+      ).output.trim();
 
       const pushToken = await getGitHubInstallationToken(input.installationId);
       await sandbox.materializeEntry?.({
