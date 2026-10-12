@@ -84,9 +84,9 @@ set local role authenticated;
 set local request.jwt.claim.sub = '99999999-9999-4999-8999-999999999999';
 
 select results_eq(
-  $ select count(*) from public.runtime_checkpoints where runtime_execution_id = (
+  $q$ select count(*) from public.runtime_checkpoints where runtime_execution_id = (
     select (value->>'runtimeExecutionId')::uuid from probe_context
-  ) $,
+  ) $q$,
   array[2::bigint],
   'workflow checkpoint is durable'
 );
