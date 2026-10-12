@@ -166,6 +166,63 @@ export type Database = {
           },
         ]
       }
+      human_dependencies: {
+        Row: {
+          action_id: string
+          created_at: string
+          id: string
+          kind: string
+          options: Json
+          project_id: string
+          prompt: string
+          resolved_at: string | null
+          resolved_value: Json | null
+          status: string
+          why_human: string
+        }
+        Insert: {
+          action_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          options?: Json
+          project_id: string
+          prompt: string
+          resolved_at?: string | null
+          resolved_value?: Json | null
+          status?: string
+          why_human: string
+        }
+        Update: {
+          action_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          options?: Json
+          project_id?: string
+          prompt?: string
+          resolved_at?: string | null
+          resolved_value?: Json | null
+          status?: string
+          why_human?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "human_dependencies_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "human_dependencies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -534,6 +591,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_mvp_direction: {
+        Args: {
+          p_expected_revision: number
+          p_next_nba_acceptance_condition: Json
+          p_next_nba_expected_result: Json
+          p_next_nba_objective: string
+          p_next_nba_title: string
+          p_project_id: string
+          p_specialization_state: Json
+        }
+        Returns: Json
+      }
       create_project_with_profile: {
         Args: {
           p_core_state?: Json
@@ -541,6 +610,22 @@ export type Database = {
           p_specialization_state?: Json
         }
         Returns: string
+      }
+      establish_genesis_and_nba: {
+        Args: {
+          p_core_state: Json
+          p_expected_revision: number
+          p_human_options?: Json
+          p_human_prompt: string
+          p_human_why: string
+          p_nba_acceptance_condition: Json
+          p_nba_expected_result: Json
+          p_nba_objective: string
+          p_nba_title: string
+          p_project_id: string
+          p_specialization_state: Json
+        }
+        Returns: Json
       }
       reconcile_project_state: {
         Args: {

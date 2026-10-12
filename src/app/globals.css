@@ -135,3 +135,29 @@ textarea { resize: vertical; line-height: 1.5; }
   .inline-form { grid-template-columns: 1fr; }
   .hero-actions { flex-direction: column; align-items: stretch; }
 }
+
+
+/* Increment 2 — Genesis, Product Model, NBA */
+.genesis-form { display: grid; gap: 18px; }
+.genesis-section { display: grid; gap: 18px; }
+.genesis-section label { display: grid; gap: 8px; font-weight: 700; }
+.genesis-section label span { font-size: .92rem; }
+.genesis-submit { width: 100%; }
+.genesis-cta { display: grid; gap: 16px; }
+.genesis-cta .primary-link { justify-self: start; }
+.correction-link { display: inline-block; margin-top: 18px; }
+.product-model-panel,.nba-panel { margin-top: 18px; }
+.product-model-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; margin-top: 18px; }
+.product-model-grid>div { border-top: 1px solid var(--aeos-border); padding-top: 14px; }
+.product-model-grid h3 { margin: 0 0 8px; font-size: .9rem; }
+.product-model-grid p { margin: 0; color: var(--aeos-muted); line-height: 1.55; }
+.scope-list { margin: 0; padding-left: 20px; color: var(--aeos-muted); line-height: 1.6; }
+.ownership-chip { border-radius: 999px; padding: 7px 10px; background: #eef4f8; color: var(--aeos-blue); font-size: .78rem; font-weight: 700; }
+.nba-objective { max-width: 72ch; color: var(--aeos-muted); line-height: 1.65; }
+.compact-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.human-dependency { margin-top: 20px; border-top: 1px solid var(--aeos-border); padding-top: 18px; display: grid; gap: 10px; }
+.human-dependency p { margin: 0; color: var(--aeos-muted); line-height: 1.55; }
+.human-dependency form { margin-top: 4px; }
+@media (max-width: 720px) {
+  .product-model-grid,.compact-list { grid-template-columns: 1fr; }
+}
