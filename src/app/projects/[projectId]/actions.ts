@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { RuntimeControllerError, executeAction } from "@/aeos/runtime/runtime-controller";
 import { confirmMvpDirection } from "@/server/genesis";
+import {
+  DurableRuntimeError,
+  requestDurabilityProbeCancel,
+  startDurabilityProbe,
+} from "@/server/durable-runtime";
 import { StaleProjectStateError } from "@/server/project-state";
 
 export async function confirmMvpAction(formData: FormData) {
@@ -52,4 +57,62 @@ export async function executeCurrentActionAction(formData: FormData) {
 
   revalidatePath("/projects/" + projectId);
   redirect("/projects/" + projectId + "?runtime=success");
+}
+
+
+export async function startDurabilityProbeAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+  const expectedRevision = Number(formData.get("expectedRevision"));
+
+  if (!projectId || !Number.isInteger(expectedRevision)) {
+    redirect("/projects/" + projectId + "?durability_error=invalid");
+  }
+
+  try {
+    await startDurabilityProbe({ projectId, expectedRevision });
+  } catch (error) {
+    if (error instanceof StaleProjectStateError) {
+      redirect("/projects/" + projectId + "?error=stale");
+    }
+    if (error instanceof DurableRuntimeError) {
+      redirect(
+        "/projects/" +
+          projectId +
+          "?durability_error=" +
+          encodeURIComponent(error.code),
+      );
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?durability_error=start_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?durability=started");
+}
+
+export async function cancelDurabilityProbeAction(formData: FormData) {
+  const projectId = String(formData.get("projectId") ?? "");
+  const runtimeExecutionId = String(formData.get("runtimeExecutionId") ?? "");
+
+  if (!projectId || !runtimeExecutionId) {
+    redirect("/projects/" + projectId + "?durability_error=invalid");
+  }
+
+  try {
+    await requestDurabilityProbeCancel(runtimeExecutionId);
+  } catch (error) {
+    if (error instanceof DurableRuntimeError) {
+      redirect(
+        "/projects/" +
+          projectId +
+          "?durability_error=" +
+          encodeURIComponent(error.code),
+      );
+    }
+    if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) throw error;
+    redirect("/projects/" + projectId + "?durability_error=cancel_failed");
+  }
+
+  revalidatePath("/projects/" + projectId);
+  redirect("/projects/" + projectId + "?durability=cancel_requested");
 }

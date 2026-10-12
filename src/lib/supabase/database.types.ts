@@ -379,6 +379,41 @@ export type Database = {
         }
         Relationships: []
       }
+      runtime_checkpoints: {
+        Row: {
+          created_at: string
+          id: string
+          phase: string
+          runtime_execution_id: string
+          sequence: number
+          state: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phase: string
+          runtime_execution_id: string
+          sequence: number
+          state?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phase?: string
+          runtime_execution_id?: string
+          sequence?: number
+          state?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runtime_checkpoints_runtime_execution_id_fkey"
+            columns: ["runtime_execution_id"]
+            isOneToOne: false
+            referencedRelation: "runtime_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       runtime_executions: {
         Row: {
           action_id: string
@@ -400,6 +435,8 @@ export type Database = {
           started_at: string | null
           state: string
           usage: Json
+          workflow_access_expires_at: string | null
+          workflow_access_hash: string | null
           workflow_run_id: string | null
         }
         Insert: {
@@ -422,6 +459,8 @@ export type Database = {
           started_at?: string | null
           state?: string
           usage?: Json
+          workflow_access_expires_at?: string | null
+          workflow_access_hash?: string | null
           workflow_run_id?: string | null
         }
         Update: {
@@ -444,6 +483,8 @@ export type Database = {
           started_at?: string | null
           state?: string
           usage?: Json
+          workflow_access_expires_at?: string | null
+          workflow_access_hash?: string | null
           workflow_run_id?: string | null
         }
         Relationships: [
@@ -591,6 +632,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bind_durable_workflow: {
+        Args: { p_runtime_execution_id: string; p_workflow_run_id: string }
+        Returns: undefined
+      }
       complete_runtime_analysis: {
         Args: {
           p_expected_revision: number
@@ -623,6 +668,10 @@ export type Database = {
           p_project_id: string
           p_specialization_state: Json
         }
+        Returns: Json
+      }
+      create_durability_probe: {
+        Args: { p_expected_revision: number; p_project_id: string }
         Returns: Json
       }
       create_project_with_profile: {
@@ -673,6 +722,10 @@ export type Database = {
         }
         Returns: number
       }
+      request_cancel_runtime_execution: {
+        Args: { p_runtime_execution_id: string }
+        Returns: undefined
+      }
       start_runtime_execution: {
         Args: {
           p_action_id: string
@@ -682,6 +735,40 @@ export type Database = {
           p_provider: string
         }
         Returns: string
+      }
+      workflow_cancel_durability_probe: {
+        Args: { p_capability_token: string; p_runtime_execution_id: string }
+        Returns: undefined
+      }
+      workflow_complete_durability_probe: {
+        Args: {
+          p_capability_token: string
+          p_result: Json
+          p_runtime_execution_id: string
+        }
+        Returns: undefined
+      }
+      workflow_fail_durability_probe: {
+        Args: {
+          p_capability_token: string
+          p_error_message: string
+          p_runtime_execution_id: string
+        }
+        Returns: undefined
+      }
+      workflow_runtime_checkpoint: {
+        Args: {
+          p_capability_token: string
+          p_phase: string
+          p_runtime_execution_id: string
+          p_sequence: number
+          p_state?: Json
+        }
+        Returns: Json
+      }
+      workflow_runtime_control: {
+        Args: { p_capability_token: string; p_runtime_execution_id: string }
+        Returns: Json
       }
     }
     Enums: {

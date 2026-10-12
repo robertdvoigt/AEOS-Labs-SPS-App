@@ -2,10 +2,17 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Json } from "@/lib/supabase/database.types";
 import { readProjectState } from "@/server/project-state";
-import { confirmMvpAction, executeCurrentActionAction } from "./actions";
+import {
+  cancelDurabilityProbeAction,
+  confirmMvpAction,
+  executeCurrentActionAction,
+  startDurabilityProbeAction,
+} from "./actions";
 import { RuntimeSubmitButton } from "@/components/runtime/runtime-submit-button";
 import { RuntimeStatusPoller } from "@/components/runtime/runtime-status-poller";
 import { isRuntimeStateActive } from "@/aeos/runtime/status";
+import { DurabilityProbeButton } from "@/components/runtime/durability-probe-button";
+import { readLatestDurabilityProbe } from "@/server/durable-runtime";
 
 function ownerLabel(owner: string) {
   if (owner === "aeos") return "AEOS will do this";
@@ -63,6 +70,8 @@ export default async function ProjectWorkspacePage({
     confirmed?: string;
     runtime?: string;
     runtime_error?: string;
+    durability?: string;
+    durability_error?: string;
   }>;
 }) {
   const { projectId } = await params;
@@ -79,6 +88,8 @@ export default async function ProjectWorkspacePage({
   const product = state.canonical.specializationState.productModel;
   const genesisEstablished = core.genesis.status === "established" && product.status !== "not_started";
   const runtimeError = runtimeErrorMessage(query.runtime_error);
+  const durability = await readLatestDurabilityProbe(projectId);
+  const durabilityActive = durability?.active ?? false;
   const runtimeActionInProgress =
     Boolean(state.currentAction) &&
     state.currentAction?.owner === "aeos" &&
@@ -93,7 +104,7 @@ export default async function ProjectWorkspacePage({
 
   return (
     <main className="app-shell">
-      <RuntimeStatusPoller active={runtimeActionInProgress} />
+      <RuntimeStatusPoller active={runtimeActionInProgress || durabilityActive} />
       <header className="workspace-header">
         <div>
           <Link href="/projects" className="back-link">← Projects</Link>
@@ -120,6 +131,21 @@ export default async function ProjectWorkspacePage({
       ) : null}
       {runtimeError ? (
         <div className="notice warning" role="alert">{runtimeError}</div>
+      ) : null}
+      {query.durability === "started" ? (
+        <div className="notice success" role="status">
+          Durable workflow started. You can leave this page; progress is persisted independently of this request.
+        </div>
+      ) : null}
+      {query.durability === "cancel_requested" ? (
+        <div className="notice warning" role="status">
+          Cancellation requested. The workflow will stop at its next safe boundary.
+        </div>
+      ) : null}
+      {query.durability_error ? (
+        <div className="notice warning" role="alert">
+          The durable workflow check could not be started or updated. Canonical project state was preserved.
+        </div>
       ) : null}
       {query.error === "stale" ? (
         <div className="notice warning" role="alert">
@@ -258,6 +284,84 @@ export default async function ProjectWorkspacePage({
               </>
             ) : null}
           </section>
+
+          {state.currentAction?.owner === "aeos" &&
+          state.currentAction.action_type === "build" ? (
+            <section className="panel durability-panel">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">Implementation verification</p>
+                  <h2>Durable Runtime continuity</h2>
+                </div>
+                <span>{durability?.execution.state ?? "not run"}</span>
+              </div>
+              <p className="panel-copy">
+                This operational check proves that Runtime progress survives the initiating request and browser session before coding/sandbox execution is enabled.
+              </p>
+
+              {durability ? (
+                <>
+                  <dl className="runtime-grid">
+                    <div>
+                      <dt>Workflow run</dt>
+                      <dd>{durability.execution.workflow_run_id ?? "starting…"}</dd>
+                    </div>
+                    <div>
+                      <dt>Checkpoints</dt>
+                      <dd>{durability.checkpoints.length}</dd>
+                    </div>
+                    <div>
+                      <dt>Verification</dt>
+                      <dd>{durability.verification?.status ?? "pending"}</dd>
+                    </div>
+                  </dl>
+
+                  {durability.checkpoints.length ? (
+                    <ol className="checkpoint-list">
+                      {durability.checkpoints.map((checkpoint) => (
+                        <li key={checkpoint.sequence}>
+                          <strong>{checkpoint.phase}</strong>
+                          <span>Checkpoint {checkpoint.sequence}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : null}
+
+                  {durability.active ? (
+                    <form action={cancelDurabilityProbeAction}>
+                      <input type="hidden" name="projectId" value={projectId} />
+                      <input
+                        type="hidden"
+                        name="runtimeExecutionId"
+                        value={durability.execution.id}
+                      />
+                      <DurabilityProbeButton mode="cancel" />
+                    </form>
+                  ) : (
+                    <form action={startDurabilityProbeAction}>
+                      <input type="hidden" name="projectId" value={projectId} />
+                      <input
+                        type="hidden"
+                        name="expectedRevision"
+                        value={state.profile.revision}
+                      />
+                      <DurabilityProbeButton mode="start" />
+                    </form>
+                  )}
+                </>
+              ) : (
+                <form action={startDurabilityProbeAction}>
+                  <input type="hidden" name="projectId" value={projectId} />
+                  <input
+                    type="hidden"
+                    name="expectedRevision"
+                    value={state.profile.revision}
+                  />
+                  <DurabilityProbeButton mode="start" />
+                </form>
+              )}
+            </section>
+          ) : null}
 
           {state.latestRuntime ? (
             <section className="panel runtime-panel">
