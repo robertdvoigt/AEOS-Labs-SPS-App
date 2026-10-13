@@ -10,6 +10,7 @@ import { VercelSandboxClient } from "@openai/agents-extensions/sandbox/vercel";
 import { createWorkflowSupabaseClient } from "@/integrations/supabase/workflow-client";
 import { getGitHubInstallationToken } from "@/integrations/github/app";
 import type { Json } from "@/lib/supabase/database.types";
+import { parseSandboxExecResponse, type ParsedSandboxExec } from "@/aeos/runtime/sandbox-exec";
 
 type CodeExecutionInput = {
   runtimeExecutionId: string;
@@ -37,33 +38,12 @@ type ExecCommandCapable = {
   }) => Promise<string>;
 };
 
-type ParsedExec = {
-  raw: string;
-  output: string;
-  exitCode?: number;
-};
-
-function parseExecResponse(raw: string): ParsedExec {
-  const match = raw.match(/Process exited with code (\\d+)/);
-  const outputMarker = "\\nOutput:\\n";
-  const outputIndex = raw.indexOf(outputMarker);
-
-  return {
-    raw,
-    output:
-      outputIndex >= 0
-        ? raw.slice(outputIndex + outputMarker.length)
-        : raw,
-    exitCode: match ? Number(match[1]) : undefined,
-  };
-}
-
 async function exec(
   sandbox: ExecCommandCapable,
   cmd: string,
   workdir?: string,
   allowFailure = false,
-): Promise<ParsedExec> {
+): Promise<ParsedSandboxExec> {
   if (!sandbox.execCommand) {
     throw new Error("Sandbox does not expose command execution.");
   }
@@ -73,7 +53,7 @@ async function exec(
     workdir,
     maxOutputTokens: 12000,
   });
-  const result = parseExecResponse(raw);
+  const result = parseSandboxExecResponse(raw);
 
   if (!allowFailure && result.exitCode !== 0) {
     throw new Error(
