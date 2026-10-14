@@ -142,6 +142,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
   const root = sandbox.state.manifest.root;
   const credentialFile = root + "/.git-credentials";
   const repoDir = "repo";
+  let agentCompleted = false;
 
   try {
     const credentialUrl =
@@ -270,6 +271,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
         sandboxRef,
         summary: agentSummary,
       });
+      agentCompleted = true;
     }
 
     const afterAgent = await control(input);
@@ -402,6 +404,26 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
       baseCommit,
       headCommit,
     };
+  } catch (error) {
+    if (agentCompleted) {
+      const message =
+        error instanceof Error ? error.message : "Code execution failed after agent completion.";
+      const supabase = createWorkflowSupabaseClient();
+      const { error: failError } = await supabase.rpc("workflow_fail_code_execution", {
+        p_runtime_execution_id: input.runtimeExecutionId,
+        p_capability_token: input.capabilityToken,
+        p_code_change_id: input.codeChangeId,
+        p_error_message: message,
+      });
+
+      if (failError) {
+        throw new Error(failError.message);
+      }
+
+      return { status: "failed", error: message };
+    }
+
+    throw error;
   } finally {
     await sandbox.delete?.();
   }
