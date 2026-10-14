@@ -252,7 +252,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
         name: "AEOS Coding Agent",
         model,
         instructions:
-          "You are implementing one bounded AEOS Action Contract. Read ../task/action-contract.json before changing anything. Inspect the existing repository first. Implement the smallest coherent first build-ready increment that materially advances the supplied requirements. Do not broaden scope, modify secrets, change external infrastructure, push commits, or claim browser verification. Preserve existing behavior. Run targeted checks while working; the Runtime will run the full deterministic verification suite after you finish.",
+          "You are implementing one bounded AEOS Action Contract. Read ../task/action-contract.json before changing anything. Inspect the existing repository first. Implement the smallest coherent first build-ready increment that materially advances the supplied requirements. Prioritize one complete vertical slice that can be finished within the available agent turn budget; defer additional scope explicitly instead of continuing indefinitely. Do not broaden scope, modify secrets, change external infrastructure, push commits, or claim browser verification. Preserve existing behavior. Run targeted checks while working; the Runtime will run the full deterministic verification suite after you finish.",
         capabilities: Capabilities.default(),
       });
 
@@ -264,7 +264,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
             session: sandbox,
             cwd: repoDir,
           },
-          maxTurns: 30,
+          maxTurns: 12,
         },
       );
 
