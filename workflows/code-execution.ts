@@ -142,7 +142,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
   const root = sandbox.state.manifest.root;
   const credentialFile = root + "/.git-credentials";
   const repoDir = "repo";
-  let agentCompleted = false;
+  let sandboxReady = false;
 
   try {
     const credentialUrl =
@@ -222,6 +222,7 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
       branch: input.branch,
       recoveredRemoteBranch: remoteBranchExists,
     });
+    sandboxReady = true;
 
     const afterSetup = await control(input);
     if (afterSetup.cancelRequested) {
@@ -241,6 +242,11 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
         process.env.OPENAI_MODEL_CODING?.trim() ||
         process.env.OPENAI_MODEL_DEEP?.trim() ||
         "gpt-6.1-sol";
+
+      await checkpoint(input, 2, "agent_started", {
+        sandboxRef,
+        model,
+      });
 
       const agent = new SandboxAgent({
         name: "AEOS Coding Agent",
@@ -271,7 +277,6 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
         sandboxRef,
         summary: agentSummary,
       });
-      agentCompleted = true;
     }
 
     const afterAgent = await control(input);
@@ -405,9 +410,9 @@ async function runCodeExecutionStep(input: CodeExecutionInput) {
       headCommit,
     };
   } catch (error) {
-    if (agentCompleted) {
+    if (sandboxReady) {
       const message =
-        error instanceof Error ? error.message : "Code execution failed after agent completion.";
+        error instanceof Error ? error.message : "Code execution failed after sandbox setup.";
       const supabase = createWorkflowSupabaseClient();
       const { error: failError } = await supabase.rpc("workflow_fail_code_execution", {
         p_runtime_execution_id: input.runtimeExecutionId,
