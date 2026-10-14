@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('33333333-3333-3333-3333-333333333333', 'increment1-owner@example.test'),
@@ -39,6 +39,22 @@ select results_eq(
   ) and revision = 0 $$,
   array[1::bigint],
   'initial canonical revision is recorded'
+);
+
+select results_eq(
+  $$ select core_state->>'mission' from public.project_profiles where project_id = (
+    select id from public.projects where name = 'Increment 1 Project'
+  ) $$,
+  array['Build the first canonical project'::text],
+  'creation persists the supplied goal in the canonical profile'
+);
+
+select results_eq(
+  $$ select core_state->>'mission' from public.project_profile_revisions where project_id = (
+    select id from public.projects where name = 'Increment 1 Project'
+  ) and revision = 0 $$,
+  array['Build the first canonical project'::text],
+  'initial revision preserves the supplied goal'
 );
 
 select lives_ok(
@@ -93,6 +109,20 @@ select results_eq(
   'other user cannot read owner project'
 );
 
+select results_eq(
+  $$ select count(*) from public.project_profiles where core_state->>'mission' =
+    'Build the first canonical project safely' $$,
+  array[0::bigint],
+  'other user cannot read the canonical goal'
+);
+
+select results_eq(
+  $$ select count(*) from public.project_profile_revisions where core_state->>'mission' =
+    'Build the first canonical project' $$,
+  array[0::bigint],
+  'other user cannot read the initial goal revision'
+);
+
 select throws_ok(
   $$ select public.reconcile_project_state(
     (select id from public.projects where name = 'Increment 1 Project'),
@@ -116,6 +146,17 @@ select throws_ok(
   '42501',
   null,
   'anonymous role cannot execute project creation RPC'
+);
+
+set local role authenticated;
+set local request.jwt.claim.sub = '33333333-3333-3333-3333-333333333333';
+
+select results_eq(
+  $$ select core_state->>'mission' from public.project_profiles where project_id = (
+    select id from public.projects where name = 'Increment 1 Project'
+  ) $$,
+  array['Build the first canonical project safely'::text],
+  'returning owner reads the current canonical goal'
 );
 
 select * from finish();

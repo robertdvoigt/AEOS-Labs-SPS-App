@@ -30,15 +30,27 @@ export default async function ProjectsPage({
           Start with the outcome. AEOS will establish the project state before choosing
           implementation details.
         </p>
-        <form action={createProjectAction} className="inline-form">
-          <input
-            type="text"
-            name="name"
-            required
-            maxLength={160}
-            placeholder="e.g. Scheduling assistant MVP"
-            aria-label="Project name"
-          />
+        <form action={createProjectAction} className="genesis-section">
+          <label>
+            <span>Project name</span>
+            <input
+              type="text"
+              name="name"
+              required
+              maxLength={160}
+              placeholder="e.g. Scheduling assistant MVP"
+            />
+          </label>
+          <label>
+            <span>Project goal</span>
+            <textarea
+              name="goal"
+              required
+              maxLength={1200}
+              rows={3}
+              placeholder="Describe the outcome you want to create in plain language."
+            />
+          </label>
           <button type="submit" className="primary-button">Create project</button>
         </form>
         {params.error ? (

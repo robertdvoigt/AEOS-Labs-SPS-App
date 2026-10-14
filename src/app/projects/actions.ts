@@ -7,9 +7,10 @@ import { createProject } from "@/server/project-state";
 
 export async function createProjectAction(formData: FormData) {
   const name = String(formData.get("name") ?? "");
+  const goal = String(formData.get("goal") ?? "");
 
   try {
-    const projectId = await createProject(name);
+    const projectId = await createProject(name, goal);
     revalidatePath("/projects");
     redirect(`/projects/${projectId}`);
   } catch (error) {

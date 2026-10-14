@@ -35,10 +35,15 @@ export async function listProjects() {
   return data;
 }
 
-export async function createProject(name: string) {
+export async function createProject(name: string, goal: string) {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 160) {
     throw new Error("Project name must be between 1 and 160 characters.");
+  }
+
+  const mission = goal.trim();
+  if (!mission || mission.length > 1200) {
+    throw new Error("Project goal must be between 1 and 1200 characters.");
   }
 
   const { supabase } = await requireUser();
@@ -46,7 +51,7 @@ export async function createProject(name: string) {
     p_name: trimmed,
     p_core_state: {
       status: "active",
-      mission: null,
+      mission,
       successStandard: null,
       targetCondition: null,
       constraints: [],
