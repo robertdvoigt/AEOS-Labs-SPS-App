@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(16);
 
 insert into auth.users (id, email) values
   ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee', 'runtime-v12-owner@example.test');
@@ -56,6 +56,38 @@ select public.register_project_repository(
   'runtime-v12-owner','adaptive-repo','98760','main'
 ) as id;
 grant select on v12_repo to authenticated, anon;
+
+reset role;
+
+update public.action_contracts
+set input='{}'::jsonb
+where id=(select current_nba_action_id from public.project_profiles
+          where project_id=(select id from public.projects where name='Runtime v1.2 Adaptive Test'));
+
+set local role authenticated;
+set local request.jwt.claim.sub = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+
+select throws_ok(
+  $ select public.create_code_execution(
+    (select id from public.projects where name='Runtime v1.2 Adaptive Test'),
+    0,
+    (select id from v12_repo),
+    'aeos/adaptive/unbounded'
+  ) $,
+  '55000',
+  'bounded Build Unit required before software execution',
+  'software execution requires a bounded Build Unit'
+);
+
+reset role;
+
+update public.action_contracts
+set input='{"buildUnit":{"outcome":"One bounded verified result","scope":"Adaptive Runtime test only","acceptance":{"verified":true},"dependencies":[],"verification":["database"]}}'::jsonb
+where id=(select current_nba_action_id from public.project_profiles
+          where project_id=(select id from public.projects where name='Runtime v1.2 Adaptive Test'));
+
+set local role authenticated;
+set local request.jwt.claim.sub = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 create temp table v12_first as
 select public.create_code_execution(
