@@ -291,7 +291,12 @@ export async function startCodeExecution(input: {
       id: state.currentAction.id,
       title: state.currentAction.title,
       objective: state.currentAction.objective,
+      expectedResult: state.currentAction.expected_result,
       acceptanceCondition: state.currentAction.acceptance_condition,
+      requiredCapabilities: state.currentAction.required_capabilities,
+      verificationRequirements: state.currentAction.verification_requirements,
+      authorityRequirements: state.currentAction.authority_requirements,
+      input: state.currentAction.input,
     },
     productModel: {
       intendedUser: state.canonical.specializationState.productModel.intendedUser,
@@ -299,8 +304,6 @@ export async function startCodeExecution(input: {
         state.canonical.specializationState.productModel.promisedMinimumValue,
       criticalWorkflow:
         state.canonical.specializationState.productModel.criticalWorkflow,
-      requirements:
-        state.canonical.specializationState.productModel.requirements,
     },
   };
 
