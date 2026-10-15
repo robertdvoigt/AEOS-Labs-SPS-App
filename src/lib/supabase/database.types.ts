@@ -92,6 +92,136 @@ export type Database = {
           },
         ]
       }
+      action_execution_strategies: {
+        Row: {
+          action_id: string
+          change_rationale: string | null
+          configuration: Json
+          material_changes: Json
+          project_id: string
+          strategy_key: string
+          strategy_revision: number
+          updated_at: string
+        }
+        Insert: {
+          action_id: string
+          change_rationale?: string | null
+          configuration?: Json
+          material_changes?: Json
+          project_id: string
+          strategy_key?: string
+          strategy_revision?: number
+          updated_at?: string
+        }
+        Update: {
+          action_id?: string
+          change_rationale?: string | null
+          configuration?: Json
+          material_changes?: Json
+          project_id?: string
+          strategy_key?: string
+          strategy_revision?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_execution_strategies_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: true
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_execution_strategies_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      execution_adaptation_reviews: {
+        Row: {
+          action_id: string
+          changed_variables: Json
+          created_at: string
+          disposition: string
+          failure_class: string
+          failure_phase: string
+          failure_signature: string
+          id: string
+          prior_attempt_ids: Json
+          project_id: string
+          rationale: string
+          repeated_failure_count: number
+          required_change: string | null
+          resolved_at: string | null
+          resolved_strategy_key: string | null
+          status: string
+          trigger_runtime_execution_id: string
+        }
+        Insert: {
+          action_id: string
+          changed_variables?: Json
+          created_at?: string
+          disposition: string
+          failure_class: string
+          failure_phase: string
+          failure_signature: string
+          id?: string
+          prior_attempt_ids?: Json
+          project_id: string
+          rationale: string
+          repeated_failure_count: number
+          required_change?: string | null
+          resolved_at?: string | null
+          resolved_strategy_key?: string | null
+          status?: string
+          trigger_runtime_execution_id: string
+        }
+        Update: {
+          action_id?: string
+          changed_variables?: Json
+          created_at?: string
+          disposition?: string
+          failure_class?: string
+          failure_phase?: string
+          failure_signature?: string
+          id?: string
+          prior_attempt_ids?: Json
+          project_id?: string
+          rationale?: string
+          repeated_failure_count?: number
+          required_change?: string | null
+          resolved_at?: string | null
+          resolved_strategy_key?: string | null
+          status?: string
+          trigger_runtime_execution_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "execution_adaptation_reviews_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_adaptation_reviews_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_adaptation_reviews_trigger_runtime_execution_id_fkey"
+            columns: ["trigger_runtime_execution_id"]
+            isOneToOne: false
+            referencedRelation: "runtime_executions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       code_changes: {
         Row: {
           accepted_at: string | null
@@ -585,6 +715,7 @@ export type Database = {
       runtime_executions: {
         Row: {
           action_id: string
+          adaptation_review_required: boolean
           attempt: number
           cancel_requested_at: string | null
           completed_at: string | null
@@ -592,14 +723,20 @@ export type Database = {
           created_at: string
           error_code: string | null
           error_message: string | null
+          execution_strategy: string
+          failure_class: string | null
+          failure_phase: string | null
+          failure_signature: string | null
           id: string
           limitations: Json
+          material_changes: Json
           model: string | null
           model_class: string | null
           project_id: string
           provider: string | null
           provider_response_id: string | null
           result: Json
+          strategy_revision: number
           started_at: string | null
           state: string
           usage: Json
@@ -609,6 +746,7 @@ export type Database = {
         }
         Insert: {
           action_id: string
+          adaptation_review_required?: boolean
           attempt?: number
           cancel_requested_at?: string | null
           completed_at?: string | null
@@ -616,14 +754,20 @@ export type Database = {
           created_at?: string
           error_code?: string | null
           error_message?: string | null
+          execution_strategy?: string
+          failure_class?: string | null
+          failure_phase?: string | null
+          failure_signature?: string | null
           id?: string
           limitations?: Json
+          material_changes?: Json
           model?: string | null
           model_class?: string | null
           project_id: string
           provider?: string | null
           provider_response_id?: string | null
           result?: Json
+          strategy_revision?: number
           started_at?: string | null
           state?: string
           usage?: Json
@@ -633,6 +777,7 @@ export type Database = {
         }
         Update: {
           action_id?: string
+          adaptation_review_required?: boolean
           attempt?: number
           cancel_requested_at?: string | null
           completed_at?: string | null
@@ -640,14 +785,20 @@ export type Database = {
           created_at?: string
           error_code?: string | null
           error_message?: string | null
+          execution_strategy?: string
+          failure_class?: string | null
+          failure_phase?: string | null
+          failure_signature?: string | null
           id?: string
           limitations?: Json
+          material_changes?: Json
           model?: string | null
           model_class?: string | null
           project_id?: string
           provider?: string | null
           provider_response_id?: string | null
           result?: Json
+          strategy_revision?: number
           started_at?: string | null
           state?: string
           usage?: Json
@@ -909,6 +1060,16 @@ export type Database = {
           p_repo: string
         }
         Returns: string
+      }
+      resolve_execution_adaptation_review: {
+        Args: {
+          p_action_id: string
+          p_changed_variables?: Json
+          p_disposition: string
+          p_rationale: string
+          p_strategy_key: string
+        }
+        Returns: Json
       }
       request_cancel_runtime_execution: {
         Args: { p_runtime_execution_id: string }
