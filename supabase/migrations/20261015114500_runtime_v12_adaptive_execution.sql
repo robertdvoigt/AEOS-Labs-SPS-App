@@ -124,6 +124,7 @@ declare
   v_user_id uuid := auth.uid();
   v_action_id uuid;
   v_action_input jsonb;
+  v_action_status text;
   v_code_change_id uuid;
   v_execution_id uuid;
   v_token text;
@@ -140,8 +141,8 @@ begin
     raise exception 'branch required' using errcode = '22023';
   end if;
 
-  select a.id, a.input
-  into v_action_id, v_action_input
+  select a.id, a.input, a.status
+  into v_action_id, v_action_input, v_action_status
   from public.projects p
   join public.project_profiles pp on pp.project_id = p.id
   join public.action_contracts a on a.id = pp.current_nba_action_id
@@ -152,7 +153,6 @@ begin
     and a.profile_revision = p_expected_revision
     and a.owner = 'aeos'
     and a.action_type = 'build'
-    and a.status = 'ready'
   for update of pp, a;
 
   if v_action_id is null then
@@ -183,6 +183,10 @@ begin
       and ar.status = 'required'
   ) then
     raise exception 'adaptive execution review required before another attempt' using errcode = '55000';
+  end if;
+
+  if v_action_status <> 'ready' then
+    raise exception 'build action is not current and executable' using errcode = '55000';
   end if;
 
   if exists (
