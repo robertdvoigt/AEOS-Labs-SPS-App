@@ -68,12 +68,12 @@ set local role authenticated;
 set local request.jwt.claim.sub = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
 
 select throws_ok(
-  $ select public.create_code_execution(
+  $sql$ select public.create_code_execution(
     (select id from public.projects where name='Runtime v1.2 Adaptive Test'),
     0,
     (select id from v12_repo),
     'aeos/adaptive/unbounded'
-  ) $,
+  ) $sql$,
   '55000',
   'bounded Build Unit required before software execution',
   'software execution requires a bounded Build Unit'
