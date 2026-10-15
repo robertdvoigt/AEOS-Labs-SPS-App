@@ -99,7 +99,7 @@ export async function readSourceWorkspace(projectId: string) {
   if (codeChange) {
     const { data: executionData, error: executionError } = await supabase
       .from("runtime_executions")
-      .select("id,action_id,state,workflow_run_id,cancel_requested_at,error_code,error_message,provider,started_at,completed_at,created_at,result")
+      .select("id,action_id,state,workflow_run_id,cancel_requested_at,error_code,error_message,provider,started_at,completed_at,created_at,result,attempt,execution_strategy,strategy_revision,material_changes,failure_phase,failure_class,failure_signature,adaptation_review_required")
       .eq("action_id", codeChange.action_id)
       .eq("provider", "openai_agents_vercel_sandbox")
       .order("created_at", { ascending: false })
@@ -132,6 +132,30 @@ export async function readSourceWorkspace(projectId: string) {
     }
   }
 
+  const { data: adaptationReview, error: adaptationError } = await supabase
+    .from("execution_adaptation_reviews")
+    .select("id,action_id,trigger_runtime_execution_id,status,failure_phase,failure_class,failure_signature,repeated_failure_count,disposition,rationale,prior_attempt_ids,required_change,resolved_strategy_key,changed_variables,created_at,resolved_at")
+    .eq("project_id", projectId)
+    .eq("status", "required")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (adaptationError) throw adaptationError;
+
+  let executionStrategy = null;
+  const strategyActionId = adaptationReview?.action_id ?? codeChange?.action_id;
+  if (strategyActionId) {
+    const { data: strategyData, error: strategyError } = await supabase
+      .from("action_execution_strategies")
+      .select("action_id,project_id,strategy_key,strategy_revision,configuration,material_changes,change_rationale,updated_at")
+      .eq("action_id", strategyActionId)
+      .maybeSingle();
+
+    if (strategyError) throw strategyError;
+    executionStrategy = strategyData;
+  }
+
   return {
     connection,
     connectionMetadata: jsonRecord(connection?.metadata),
@@ -140,6 +164,8 @@ export async function readSourceWorkspace(projectId: string) {
     execution,
     verification,
     checkpoints,
+    adaptationReview,
+    executionStrategy,
   };
 }
 
@@ -239,6 +265,23 @@ export async function startCodeExecution(input: {
     throw new SourceWorkspaceError(
       "build_not_ready",
       "The current build action is not ready.",
+    );
+  }
+
+  const actionInput = jsonRecord(state.currentAction.input);
+  const buildUnit = jsonRecord(actionInput.buildUnit);
+
+  if (
+    typeof buildUnit.outcome !== "string" ||
+    !buildUnit.outcome.trim() ||
+    typeof buildUnit.scope !== "string" ||
+    !buildUnit.scope.trim() ||
+    buildUnit.acceptance == null ||
+    buildUnit.verification == null
+  ) {
+    throw new SourceWorkspaceError(
+      "build_unit_required",
+      "AEOS must define a bounded Build Unit with outcome, scope, acceptance, and verification before starting software execution.",
     );
   }
 
