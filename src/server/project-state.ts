@@ -107,7 +107,7 @@ export async function readProjectState(projectId: string) {
   if (profileResult.data.current_nba_action_id) {
     const actionResult = await supabase
       .from("action_contracts")
-      .select("id,project_id,profile_revision,action_type,title,objective,owner,status,expected_result,acceptance_condition,required_capabilities")
+      .select("id,project_id,profile_revision,action_type,title,objective,owner,status,expected_result,acceptance_condition,required_capabilities,verification_requirements,authority_requirements,input")
       .eq("id", profileResult.data.current_nba_action_id)
       .maybeSingle();
 
