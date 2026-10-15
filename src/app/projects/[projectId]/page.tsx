@@ -534,6 +534,16 @@ export default async function ProjectWorkspacePage({
                       <dt>Durable Runtime</dt>
                       <dd>{durabilityVerified ? "verified" : "required"}</dd>
                     </div>
+                    <div>
+                      <dt>Execution strategy</dt>
+                      <dd>
+                        {sourceWorkspace.executionStrategy
+                          ? sourceWorkspace.executionStrategy.strategy_key +
+                            " · r" +
+                            sourceWorkspace.executionStrategy.strategy_revision
+                          : "default"}
+                      </dd>
+                    </div>
                   </dl>
 
                   {sourceWorkspace.codeChange ? (
@@ -578,6 +588,15 @@ export default async function ProjectWorkspacePage({
                         pending="Requesting cancellation…"
                       />
                     </form>
+                  ) : sourceWorkspace.adaptationReview ? (
+                    <div className="notice warning">
+                      <strong>Adaptive execution review required.</strong>{" "}
+                      AEOS detected {sourceWorkspace.adaptationReview.repeated_failure_count} materially similar{" "}
+                      {sourceWorkspace.adaptationReview.failure_class} failures at{" "}
+                      {sourceWorkspace.adaptationReview.failure_phase} under the same execution strategy.
+                      An unchanged retry is blocked. AEOS must change the execution method or record a justified
+                      transient-failure basis before another attempt.
+                    </div>
                   ) : sourceWorkspace.codeChange?.status === "pushed" &&
                     sourceWorkspace.verification?.status === "pass" ? (
                     <div className="notice success">
@@ -606,6 +625,13 @@ export default async function ProjectWorkspacePage({
                   {sourceWorkspace.execution?.error_message ? (
                     <p className="form-error">
                       {sourceWorkspace.execution.error_message}
+                    </p>
+                  ) : null}
+
+                  {sourceWorkspace.adaptationReview ? (
+                    <p className="panel-copy">
+                      Required change: {sourceWorkspace.adaptationReview.required_change ??
+                        "AEOS must revise the execution strategy before retrying."}
                     </p>
                   ) : null}
                 </>
