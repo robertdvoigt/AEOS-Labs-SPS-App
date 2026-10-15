@@ -47,7 +47,7 @@ select
   '["code_execution","repository_write","tests","browser_verification"]'::jsonb,
   '[]'::jsonb,
   '{}'::jsonb,
-  '{}'::jsonb,
+  '{"buildUnit":{"outcome":"Produce one verified code change.","scope":"Bounded code change only.","acceptance":{"buildImplemented":true},"dependencies":[],"verification":["typecheck","test","build"]}}'::jsonb,
   p.owner_user_id
 from public.projects p
 where p.name = 'Increment 5 DB Test';
